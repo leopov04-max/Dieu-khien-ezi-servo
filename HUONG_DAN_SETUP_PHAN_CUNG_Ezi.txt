@@ -1,0 +1,408 @@
+================================================================================
+  HUONG DAN CHI TIET SETUP PHAN CUNG
+  THI NGHIEM EP CAM BIEN LUC
+  Arduino Nano + EZI-Servo (che do Step/Dir) + Cong tac Home
+================================================================================
+
+Tai lieu nay huong dan tu A-Z cach noi day, cap nguon va van hanh he thong
+dieu khien dong co EZI-Servo dung che do Step/Dir, phuc vu thi nghiem ep
+cam bien luc voi quang duong co the nhap tuy y qua Serial Monitor.
+
+================================================================================
+  PHAN 1: DANH SACH LINH KIEN CAN CHUAN BI
+================================================================================
+
+1. Arduino Nano (hoac Nano tuong thich, co cong USB)
+2. Dong co EZI-Servo (Fastech) - su dung o che do Step/Dir (dong co buoc)
+3. Driver EZI-Servo tich hop (20 chan) - da co san trong bo EZI-Servo
+4. Nguon 24V DC 20A (bat buoc dung loai nay cho EZI-Servo)
+5. Cong tac nhan (Normally Open) - lam nut Home
+6. Vitme buoc 20mm/vong (hoac co cau truyen dong tuong duong)
+7. Cam bien luc (do rieng bang he thong khac, khong noi vao Arduino nay)
+8. Day dien cac mau: Nau, Do, Cam, Vang, Den, Trang, Cam soc den
+9. 1 day dien them (mau bat ky) de noi cong tac Home
+10. Day USB Mini/Micro de nap code va giao tiep Serial
+11. Breadboard hoac domino (tien cho noi day thu nghiem)
+
+================================================================================
+  PHAN 2: SO DO CHAN DRIVER EZI-SERVO (NHIN TU MAT TRUOC)
+================================================================================
+
+  Chan 1 -------- Chan 10
+  |                      |
+  |    MAT DRIVER        |
+  |                      |
+  Chan 11 ------- Chan 20
+
+  HANG TREN (Chan 1 -> 10):
+    Chan 1:  NAU        - Pulse+  (Ngo vao xung - cuc duong)
+    Chan 2:  DO         - Pulse-  (Ngo vao xung - cuc am)
+    Chan 3:  CAM        - Dir+    (Ngo vao chieu - cuc duong)
+    Chan 4:  VANG       - Dir-    (Ngo vao chieu - cuc am)
+    Chan 5 -> 9: (Chan dong co A+, A-, B+, B- tuy model)
+    Chan 10: (Tuy driver)
+
+  HANG DUOI (Chan 11 -> 20):
+    Chan 13: CAM SOC DEN - ON/Enable (Bat/Tat driver)
+    Chan 19: DEN         - GND (Mass nguon cap)
+    Chan 20: TRANG       - VCC 24V (Duong nguon cap 24V)
+
+================================================================================
+  PHAN 3: CACH NOI DAY CHI TIET (PHAN QUAN TRONG NHAT)
+================================================================================
+
+He thong nay su dung che do "COMMON ANODE" (cuc duong chung).
+Nghia la: Pulse+ va Dir+ duoc noi chung vao nguon 5V cua Arduino,
+con Pulse- va Dir- noi vao chan dieu khien cua Arduino.
+
+--------------------------------------------------------------------------
+A. NOI DAY TIN HIEU DIEU KHIEN (Arduino -> Driver) - 4 DAY
+--------------------------------------------------------------------------
+
+  +-----------------------------------------------------------------------+
+  | MAU DAY  | CHAN DRIVER | CHUC NANG | NOI VOI ARDUINO  | GHI CHU      |
+  +-----------------------------------------------------------------------+
+  | NAU      | Chan 1     | Pulse+    | Chan 5V          | Cuc duong    |
+  |          |            |           |                   | chung. Noi   |
+  |          |            |           |                   | CHUNG voi    |
+  |          |            |           |                   | day Cam.     |
+  +-----------------------------------------------------------------------+
+  | DO       | Chan 2     | Pulse-    | Chan D9           | Day cap xung |
+  |          |            |           | (Digital Pin 9)   | buoc. Moi    |
+  |          |            |           |                   | xung = dong  |
+  |          |            |           |                   | co quay 1    |
+  |          |            |           |                   | micro-step.  |
+  +-----------------------------------------------------------------------+
+  | CAM      | Chan 3     | Dir+      | Chan 5V           | Cuc duong    |
+  |          |            |           |                   | chung. Noi   |
+  |          |            |           |                   | CHUNG voi    |
+  |          |            |           |                   | day Nau.     |
+  +-----------------------------------------------------------------------+
+  | VANG     | Chan 4     | Dir-      | Chan D8           | Chon chieu   |
+  |          |            |           | (Digital Pin 8)   | quay. HIGH = |
+  |          |            |           |                   | tien (ep),   |
+  |          |            |           |                   | LOW = lui.   |
+  +-----------------------------------------------------------------------+
+
+  TOM TAT NOI NHANH:
+    - Day NAU  (Pulse+) ----> Arduino 5V       } Xoan chung 2 dau day
+    - Day CAM  (Dir+)   ----> Arduino 5V       } cam vao 1 lo 5V
+    - Day DO   (Pulse-) ----> Arduino Pin D9   (stepPin trong code)
+    - Day VANG (Dir-)   ----> Arduino Pin D8   (dirPin trong code)
+
+--------------------------------------------------------------------------
+B. NOI CONG TAC HOME (Arduino) - 2 DAY
+--------------------------------------------------------------------------
+
+  Cong tac Home la nut nhan loai Normally Open (binh thuong ho).
+  Chi can 2 day, noi TRUC TIEP, KHONG can dien tro phu.
+
+  +-----------------------------------------------------------------------+
+  | DAY      | DAU 1           | DAU 2          | GHI CHU               |
+  +-----------------------------------------------------------------------+
+  | Day 1    | Chan D2         | 1 chan cong tac | D2 co Internal Pullup |
+  |          | (Arduino Nano)  |                 | (code da bat pullup)  |
+  +-----------------------------------------------------------------------+
+  | Day 2    | Chan GND        | Chan con lai    | Khi nhan: D2 bi keo  |
+  |          | (Arduino Nano)  | cua cong tac    | xuong GND = LOW      |
+  +-----------------------------------------------------------------------+
+
+  TOM TAT:
+    - 1 chan cong tac ----> Arduino D2
+    - Chan con lai    ----> Arduino GND
+    - KHONG can dien tro, KHONG can tu, vi code dung INPUT_PULLUP.
+
+  NGUYEN LY HOAT DONG:
+    - Binh thuong (khong nhan): D2 = HIGH (nho pullup noi)
+    - Khi nhan nut:            D2 = LOW  (bi noi xuong GND)
+    - Code doc trang thai nay de biet khi nao nguoi dung nhan Home.
+
+--------------------------------------------------------------------------
+C. NOI DAY NGUON CHO DRIVER (Nguon 24V DC 20A -> Driver) - 2 DAY
+--------------------------------------------------------------------------
+
+  +-----------------------------------------------------------------------+
+  | MAU DAY  | CHAN DRIVER | CHUC NANG | NOI VOI           | GHI CHU     |
+  +-----------------------------------------------------------------------+
+  | TRANG    | Chan 20    | VCC       | Cuc (+) nguon 24V | Duong nguon |
+  +-----------------------------------------------------------------------+
+  | DEN      | Chan 19    | GND       | Cuc (-) nguon 24V | Mass nguon  |
+  +-----------------------------------------------------------------------+
+
+  >>> BAT BUOC: Dung nguon 24V 20A cho EZI-Servo.
+      - 12V: THIEU AP, dong co yeu, mat buoc.
+      - 24V 2A: THIEU DONG, bi sut ap khi tang toc.
+      - 24V 20A: PHU HOP, du dong cho moi tinh huong.
+
+--------------------------------------------------------------------------
+D. NOI MASS CHUNG (BAT BUOC) - 1 DAY
+--------------------------------------------------------------------------
+
+  +-----------------------------------------------------------------------+
+  | DAY             | DAU 1          | DAU 2                              |
+  +-----------------------------------------------------------------------+
+  | Day mass chung  | Chan GND       | Cuc (-) nguon 24V                 |
+  |                 | (Arduino Nano) | (hoac chan 19 driver - day Den)    |
+  +-----------------------------------------------------------------------+
+
+  >>> QUAN TRONG: Neu khong noi mass chung, tin hieu dieu khien se
+      khong on dinh, driver co the khong nhan duoc xung, dong co
+      khong quay hoac quay loi.
+
+--------------------------------------------------------------------------
+E. DAY ENABLE (BAT/TAT DRIVER) - KHONG CAN NOI
+--------------------------------------------------------------------------
+
+  | CAM SOC DEN | Chan 13 | ON/Enable |
+    - De ho (khong noi gi) = Driver tu dong BAT (ON).
+    - Neu noi xuong GND     = Driver TAT (OFF).
+  
+  Trong thi nghiem nay: DE HO, khong can noi gi.
+
+--------------------------------------------------------------------------
+F. NOI DAY DONG CO (Driver -> EZI-Servo Motor)
+--------------------------------------------------------------------------
+
+  Voi dong co EZI-Servo, day dong co thuong da duoc noi san voi driver
+  trong bo san pham. Kiem tra connector phia sau driver.
+  
+  Neu can noi thu cong (dong co 2 pha 4 day):
+    - Pha A+ --> Chan A+ tren Driver
+    - Pha A- --> Chan A- tren Driver
+    - Pha B+ --> Chan B+ tren Driver
+    - Pha B- --> Chan B- tren Driver
+  
+  Xem datasheet dong co de biet chinh xac mau day.
+
+================================================================================
+  PHAN 4: SO DO TONG THE
+================================================================================
+
+  +-------------+          +----------+          +-------------+
+  |   NGUON     |          |  DRIVER  |          |   DONG CO   |
+  |  24V 20A    |          | EZI-Servo|          |  EZI-Servo  |
+  +-------------+          +----------+          +-------------+
+  | (+) --------|--TRANG-->| Chan 20  |          |             |
+  | (-) --------|--DEN---->| Chan 19  |--A+/A--->| Day Pha A   |
+  |             |          |          |--B+/B--->| Day Pha B   |
+  +-------------+          +----------+          +-------------+
+        |                   |  |  |  |
+        |    +---------+    |  |  |  |
+        |    | ARDUINO  |   |  |  |  |
+        |    | NANO     |   |  |  |  |
+        |    +---------+    |  |  |  |
+        |    |         |    |  |  |  |
+        |    | 5V -----|----+--+  |  |  NAU(Pulse+) + CAM(Dir+) -> 5V
+        |    |         |          |  |
+        |    | D9 -----|---DO---->|  |  Chan 2 driver (Pulse-)
+        |    |         |             |
+        |    | D8 -----|--VANG----->|  Chan 4 driver (Dir-)
+        |    |         |
+        |    | D2 -----|--[CONG TAC HOME]--+
+        |    |         |                    |
+        +--->| GND ----|--------------------+---> Mass chung nguon 24V
+             +---------+
+
+  Tong cong day noi tu Arduino:
+    - 5V  : 2 day (Nau + Cam, xoan chung)
+    - D9  : 1 day (Do -> Pulse-)
+    - D8  : 1 day (Vang -> Dir-)
+    - D2  : 1 day (den cong tac Home)
+    - GND : 3 day (mass chung + cong tac Home + co the dung chung)
+
+================================================================================
+  PHAN 5: CAC BUOC THUC HIEN THEO THU TU
+================================================================================
+
+  BUOC 1: CHUAN BI
+    - TAT tat ca nguon dien.
+    - Chuan bi: Arduino, Driver EZI-Servo, Nguon 24V 20A, cong tac, day.
+
+  BUOC 2: NOI DAY TIN HIEU (Arduino -> Driver)
+    a) Day NAU (Pulse+, chan 1 driver) -> chan 5V Arduino.
+    b) Day CAM (Dir+, chan 3 driver)   -> chan 5V Arduino (chung voi Nau).
+    c) Day DO  (Pulse-, chan 2 driver) -> chan D9 Arduino.
+    d) Day VANG (Dir-, chan 4 driver)  -> chan D8 Arduino.
+
+  BUOC 3: NOI CONG TAC HOME
+    a) 1 chan cong tac -> chan D2 Arduino.
+    b) Chan con lai    -> chan GND Arduino.
+    (Chi can 2 day, khong can dien tro phu)
+
+  BUOC 4: NOI MASS CHUNG
+    - 1 day tu chan GND Arduino -> cuc (-) nguon 24V.
+    - KHONG DUOC BO BUOC NAY.
+
+  BUOC 5: NOI NGUON CHO DRIVER
+    a) Day TRANG (chan 20 driver) -> cuc (+) nguon 24V.
+    b) Day DEN   (chan 19 driver) -> cuc (-) nguon 24V.
+    * CHUA BAT NGUON 24V.
+
+  BUOC 6: NOI DONG CO VAO DRIVER
+    - Kiem tra connector dong co da cam vao driver chua.
+    - Neu noi thu cong: noi dung cap pha A+/A-/B+/B-.
+
+  BUOC 7: KIEM TRA LAI TOAN BO
+    - Kiem tra tung moi noi.
+    - Dam bao khong noi nguoc cuc nguon 24V (chay driver!).
+    - Dam bao day tin hieu khong bi cham chap.
+
+  BUOC 8: NAP CODE CHO ARDUINO
+    a) Cam day USB tu may tinh vao Arduino Nano.
+    b) Mo Arduino IDE.
+    c) Chon Board: "Arduino Nano".
+    d) Chon Processor: "ATmega328P" (hoac "Old Bootloader" neu loi).
+    e) Chon Port tuong ung (COM...).
+    f) Nhan Upload. Doi den khi bao "Done uploading".
+    g) CHUA BAT NGUON 24V.
+
+  BUOC 9: MO SERIAL MONITOR
+    a) Trong Arduino IDE: Tools -> Serial Monitor.
+    b) Dat Baud rate: 9600.
+    c) Dat Line ending: "Newline" (o goc duoi ben phai).
+    d) Se thay thong bao chao mung va huong dan tren man hinh.
+
+  BUOC 10: BAT NGUON 24V
+    - Cam dien / bat cong tac nguon 24V.
+    - Driver se sang den bao.
+    - Dong co se giu truc (co luc can khi xoay bang tay).
+
+  BUOC 11: DAT HOME
+    a) (Tuy chon) Xoay/dua dong co bang tay den vi tri goc mong muon.
+       Hoac de nguyen vi tri hien tai lam goc.
+    b) NHAN NUT HOME (cong tac tren D2).
+    c) Serial Monitor se hien: "HOME DA DUOC DAT TAI VI TRI HIEN TAI".
+    d) Tu bay gio, vi tri nay = 0 mm.
+
+  BUOC 12: CHAY THI NGHIEM
+    a) Nhap quang duong (mm) vao o text cua Serial Monitor. VD: 15.5
+    b) Nhan Enter.
+    c) Dong co se:
+       - Tu dong ve Home (0 mm) truoc.
+       - Roi tien toi vi tri 15.5 mm.
+       - Dung lai, giu luc tai vi tri do.
+    d) Doc gia tri cam bien luc (bang he thong doc rieng).
+    e) Nhap quang duong moi -> Enter -> lap lai.
+
+  BUOC 13: KET THUC
+    - Nhap 0 -> Enter de dua dong co ve Home.
+    - Tat nguon 24V truoc.
+    - Rut USB sau.
+
+================================================================================
+  PHAN 6: GIAO DIEN SERIAL MONITOR - LENH SU DUNG
+================================================================================
+
+  +-----------------------------------------------------------------------+
+  | NHAP VAO        | DONG CO SE LAM GI                                   |
+  +-----------------------------------------------------------------------+
+  | Nhan nut Home   | Dat vi tri hien tai = 0 mm (goc toa do)            |
+  +-----------------------------------------------------------------------+
+  | 10              | Ve Home -> Tien 10 mm -> Dung giu luc               |
+  +-----------------------------------------------------------------------+
+  | 25.5            | Ve Home -> Tien 25.5 mm -> Dung giu luc             |
+  +-----------------------------------------------------------------------+
+  | 0.5             | Ve Home -> Tien 0.5 mm -> Dung giu luc              |
+  +-----------------------------------------------------------------------+
+  | 0               | Ve Home (vi tri 0 mm)                               |
+  +-----------------------------------------------------------------------+
+
+  VD quy trinh 3 test case:
+    1. Nhan nut Home
+    2. Nhap: 5     -> Dong co tien 5mm, doc cam bien
+    3. Nhap: 10    -> Dong co ve Home, roi tien 10mm, doc cam bien
+    4. Nhap: 20    -> Dong co ve Home, roi tien 20mm, doc cam bien
+    5. Nhap: 0     -> Ve Home, ket thuc
+
+================================================================================
+  PHAN 7: THONG SO KY THUAT & CACH TINH CHINH
+================================================================================
+
+  THONG SO MAC DINH TRONG CODE:
+    - Vitme: 20 mm/vong
+    - Driver resolution: 10000 xung/vong
+    - Do chinh xac: 1 xung = 0.002 mm = 2 micromet
+    - Toc do chay test: pulseDelay = 300 us
+    - Toc do ve Home: pulseDelay = 500 us
+    - Quang duong toi da: 200 mm
+
+  CACH THAY DOI THONG SO (sua truc tiep trong file .ino):
+
+    1. DOI TOC DO:
+       - Tim dong:  unsigned int runSpeed = 300;
+       - Giam so = nhanh hon (VD: 200)
+       - Tang so = cham hon (VD: 800)
+       - Bat dau thu tu 500, giam dan.
+
+    2. DOI BUOC VITME:
+       - Tim dong:  const float mmPerRev = 20.0;
+       - Doi thanh buoc vitme thuc te cua ban (VD: 5.0, 10.0...).
+
+    3. DOI RESOLUTION DRIVER:
+       - Tim dong:  const long pulsesPerRev = 10000;
+       - Doi theo cai dat tren driver (xem num van RESOLUTION).
+
+    4. DOI CHIEU QUAY:
+       - Neu dong co tien/lui nguoc mong muon:
+         Doi: const bool DIR_PRESS = HIGH;  thanh  LOW
+         Doi: const bool DIR_RETRACT = LOW; thanh  HIGH
+
+    5. DOI GIOI HAN QUANG DUONG:
+       - Tim dong:  const float MAX_TRAVEL_MM = 200.0;
+       - Doi theo hanh trinh thuc te cua co cau.
+
+================================================================================
+  PHAN 8: XU LY SU CO THUONG GAP
+================================================================================
+
+  1. SERIAL MONITOR KHONG HIEN GI:
+     - Kiem tra Baud rate = 9600.
+     - Kiem tra Port da chon dung chua.
+     - Thu nhan nut Reset tren Arduino.
+
+  2. NHAN NUT HOME KHONG PHAN UNG:
+     - Kiem tra day noi cong tac: D2 <-> GND.
+     - Kiem tra cong tac con hoat dong khong (do thong mach).
+     - Thu doi chan cong tac (2 dau day).
+
+  3. DONG CO KHONG QUAY KHI NHAP QUANG DUONG:
+     - Da nhan Home chua? (Phai nhan truoc moi duoc nhap lenh)
+     - Kiem tra nguon 24V da bat chua.
+     - Kiem tra day Nau + Cam da noi vao 5V chua.
+     - Kiem tra mass chung (GND Arduino <-> GND nguon 24V).
+     - Kiem tra day Do (D9) va Vang (D8) da noi dung chua.
+
+  4. DONG CO QUAY NGUOC CHIEU:
+     - Doi DIR_PRESS va DIR_RETRACT trong code (HIGH <-> LOW).
+     - Hoac doi 2 day pha A+/A- cua dong co.
+
+  5. DONG CO BI GIAT, KHONG EM:
+     - Tang pulseDelay (VD: tu 300 len 600).
+     - Kiem tra resolution tren driver, tang micro-step se em hon.
+     - Kiem tra nguon 24V co du dong khong (nen dung 20A).
+
+  6. DONG CO RUN, PHAT TIENG NHUNG KHONG QUAY:
+     - Doi thu 1 cap pha dong co (swap A+/A- hoac B+/B-).
+     - Giam toc do (tang pulseDelay len 1000).
+
+  7. QUANG DUONG THUC TE KHONG DUNG:
+     - Kiem tra lai buoc vitme (mmPerRev) va resolution (pulsesPerRev).
+     - Do thuc te quang duong va so sanh voi gia tri nhap.
+     - Neu sai, tinh lai: pulsesPerMm = pulsesPerRev / mmPerRev.
+
+================================================================================
+  PHAN 9: LUU Y AN TOAN
+================================================================================
+
+  - LUON TAT NGUON 24V truoc khi thao tac noi day.
+  - KHONG cham vao dong co, vitme, co cau khi dang chay.
+  - KHONG noi nguoc cuc nguon 24V (se CHAY driver, khong sua duoc).
+  - Khi test lan dau: dung pulseDelay lon (800-1000), quang duong nho (5mm).
+  - Dat gioi han hanh trinh hop ly de tranh dong co chay qua xa.
+  - Nut Home co the nhan BAT CU LUC NAO de dat lai goc toa do.
+  - Luon ve Home (nhap 0) truoc khi tat nguon.
+
+================================================================================
+  HET - Chuc thi nghiem thanh cong!
+================================================================================
+
