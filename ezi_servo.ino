@@ -33,8 +33,8 @@ unsigned int runSpeed  = 300;   // Toc do chay test (us)
 unsigned int homeSpeed = 500;   // Toc do ve home (us) - cham hon, an toan
 
 // ===================== CHIEU QUAY ==============================
-const bool DIR_PRESS   = HIGH;  // Chieu tien (ep vao cam bien luc)
-const bool DIR_RETRACT = LOW;   // Chieu lui (ve phia home)
+const bool DIR_PRESS   = LOW;   // Chieu tien (ep vao cam bien luc)
+const bool DIR_RETRACT = HIGH;  // Chieu lui (ve phia home)
 
 // ===================== GIOI HAN AN TOAN ========================
 const float MAX_TRAVEL_MM = 200.0;  // Quang duong toi da cho phep (mm)
@@ -180,7 +180,7 @@ void setup() {
   Serial.println(F("  1. Dua dong co ve vi tri goc bang tay (neu can)"));
   Serial.println(F("  2. NHAN NUT HOME (cong tac tren D2)"));
   Serial.println(F("  3. Nhap quang duong (mm) -> Enter"));
-  Serial.println(F("  4. Dong co ve Home roi tien toi vi tri do"));
+  Serial.println(F("  4. Dong co di chuyen truc tiep den vi tri do"));
   Serial.println(F(""));
   Serial.println(F(">> NHAN NUT HOME de bat dau..."));
   Serial.println(F(""));
