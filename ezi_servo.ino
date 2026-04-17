@@ -8,7 +8,7 @@
 //   2. Dua dong co ve vi tri mong muon lam goc
 //   3. NHAN NUT HOME (cong tac tren chan D2) -> Dat vi tri = 0 mm
 //   4. Nhap quang duong (mm) vao Serial Monitor, Enter
-//      -> Dong co tu dong ve Home, roi tien toi vi tri da nhap
+//      -> Dong co di chuyen truc tiep den vi tri da nhap
 //      -> Doc cam bien luc tai vi tri do
 //   5. Nhap quang duong moi -> lap lai tu buoc 4
 //
@@ -112,26 +112,31 @@ void setHome() {
 // ================================================================
 void runTestCase(float distanceMm) {
   long targetPulses = (long)(distanceMm * pulsesPerMm);
+  long delta = targetPulses - currentPos;
 
   Serial.println(F(""));
   Serial.println(F("========================================"));
-  Serial.print(F("  TEST: Di chuyen "));
+  Serial.print(F("  TEST: Di chuyen den "));
   Serial.print(distanceMm, 2);
   Serial.print(F(" mm  ("));
   Serial.print(targetPulses);
   Serial.println(F(" xung)"));
   Serial.println(F("========================================"));
 
-  // Buoc 1: Ve Home truoc
-  Serial.println(F("[1/2] Ve Home..."));
-  goHome();
-  delay(300); // Dung ngan de on dinh
-
-  // Buoc 2: Tien toi vi tri mong muon
-  Serial.print(F("[2/2] Tien toi "));
-  Serial.print(distanceMm, 2);
-  Serial.println(F(" mm..."));
-  moveSteps(DIR_PRESS, targetPulses, runSpeed);
+  // Di chuyen truc tiep den vi tri mong muon (khong ve Home)
+  if (delta > 0) {
+    Serial.print(F("  Tien "));
+    Serial.print((float)delta / pulsesPerMm, 2);
+    Serial.println(F(" mm..."));
+    moveSteps(DIR_PRESS, delta, runSpeed);
+  } else if (delta < 0) {
+    Serial.print(F("  Lui "));
+    Serial.print((float)(-delta) / pulsesPerMm, 2);
+    Serial.println(F(" mm..."));
+    moveSteps(DIR_RETRACT, -delta, runSpeed);
+  } else {
+    Serial.println(F("  Da o vi tri mong muon."));
+  }
 
   // Hoan tat
   Serial.println(F(""));
