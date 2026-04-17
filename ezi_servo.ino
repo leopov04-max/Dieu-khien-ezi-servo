@@ -20,7 +20,7 @@ const int dirPin     = 8;   // DIR   (day Vang -> chan 4 driver: Dir-)
 const int homeBtnPin = 2;   // Cong tac Home (noi giua D2 va GND)
 
 // ===================== THONG SO CO KHI =========================
-const long  pulsesPerRev = 10000;   // Xung/vong (Resolution tren driver)
+const long  pulsesPerRev = 2000;    // Xung/vong (Resolution tren driver)
 const float mmPerRev     = 20.0;    // Buoc vitme (mm/vong)
 
 // Tinh tu dong: so xung tren moi mm
