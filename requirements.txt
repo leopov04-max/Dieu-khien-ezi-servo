@@ -1,0 +1,4 @@
+pyserial>=3.5
+matplotlib>=3.5
+numpy>=1.23
+pillow>=8
