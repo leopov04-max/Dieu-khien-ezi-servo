@@ -39,7 +39,6 @@ STM32_PORT   = 'COM4'   # STM32 BluePill - cảm biến ADC
 STM32_BAUD   = 115200
 
 PLOT_WINDOW  = 300      # Số điểm hiển thị trên đồ thị (300 điểm × 50ms = 15 giây)
-LOG_CSV      = True     # True = tự động ghi file CSV mỗi lần chạy
 # ============================================================
 
 
@@ -65,17 +64,11 @@ class DualMonitorApp:
         self.arduino_ser = None
         self.running     = True
 
-        # CSV log
-        self.csv_writer = None
-        self.csv_file   = None
-        if LOG_CSV:
-            fname = f"sensor_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
-            self.csv_file   = open(fname, 'w', newline='', encoding='utf-8')
-            self.csv_writer = csv.writer(self.csv_file)
-            self.csv_writer.writerow(['time_s', 'A0_V', 'A1_V'])
-            self.log_path = os.path.abspath(fname)
-        else:
-            self.log_path = None
+        # CSV log - bật/tắt thủ công bằng nút GHI LOG
+        self.logging_active = False
+        self.csv_writer     = None
+        self.csv_file       = None
+        self.log_path       = None
 
         self._build_ui()
         self._setup_plot_colors()
@@ -99,9 +92,9 @@ class DualMonitorApp:
                                        bg='#252526', fg='#666', font=('Consolas', 9))
         self.arduino_status.pack(side=tk.LEFT, padx=12)
 
-        if self.log_path:
-            tk.Label(top_bar, text=f"📄 Log: {os.path.basename(self.log_path)}",
-                     bg='#252526', fg='#666', font=('Consolas', 9)).pack(side=tk.RIGHT, padx=12)
+        self.log_status_label = tk.Label(top_bar, text="",
+                                         bg='#252526', fg='#4ec9b0', font=('Consolas', 9))
+        self.log_status_label.pack(side=tk.RIGHT, padx=12)
 
         tk.Button(top_bar, text="Quét cổng COM", command=self._show_ports,
                   bg='#3c3c3c', fg='white', font=('Consolas', 8),
@@ -179,6 +172,12 @@ class DualMonitorApp:
         tk.Button(ctrl, text="  STOP  ", command=lambda: self._send_cmd("stop"),
                   bg='#a31515', fg='white', font=('Consolas', 10, 'bold'),
                   relief='flat', padx=8, pady=5).pack(pady=3, fill=tk.X, padx=10)
+
+        # Nút bật/tắt ghi log
+        self.log_btn = tk.Button(ctrl, text="  GHI LOG  ", command=self._toggle_log,
+                                 bg='#1e6b3c', fg='white', font=('Consolas', 10, 'bold'),
+                                 relief='flat', padx=8, pady=5)
+        self.log_btn.pack(pady=(8, 3), fill=tk.X, padx=10)
 
         # Thanh trạng thái dưới cùng
         self.status_var = tk.StringVar(value="Khởi động...")
@@ -277,8 +276,8 @@ class DualMonitorApp:
                         self.plot_v2.append(v2)
                         self.live_a0.config(text=f"A0 (PA0): {v1:+.3f} V")
                         self.live_a1.config(text=f"A1 (PA1): {v2:+.3f} V")
-                        if self.csv_writer:
-                            self.csv_writer.writerow([f"{t:.3f}", f"{v1:.4f}", f"{v2:.4f}"])
+                        if self.logging_active and self.csv_writer:
+                            self.csv_writer.writerow([f"{t:.3f}", f"{v1:.4f}", f"{v2:.4f}", ""])
                         plot_dirty = True
                     except ValueError:
                         pass
@@ -328,12 +327,39 @@ class DualMonitorApp:
             try:
                 self.arduino_ser.write((cmd + '\n').encode('utf-8'))
                 self.arduino_queue.put(('SENT', cmd))
+                if self.logging_active and self.csv_writer:
+                    t = time.time() - self.t0
+                    self.csv_writer.writerow([f"{t:.3f}", "", "", cmd])
             except serial.SerialException as e:
                 messagebox.showerror("Lỗi gửi", str(e))
         else:
             messagebox.showwarning("Chưa kết nối",
                                    f"Arduino tại {ARDUINO_PORT} chưa kết nối.\n"
                                    "Kiểm tra lại cổng COM.")
+
+    # ----------------------------------------------------------
+    #  BẬT / TẮT GHI LOG
+    # ----------------------------------------------------------
+    def _toggle_log(self):
+        if not self.logging_active:
+            fname = f"sensor_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv"
+            self.csv_file   = open(fname, 'w', newline='', encoding='utf-8')
+            self.csv_writer = csv.writer(self.csv_file)
+            self.csv_writer.writerow(['time_s', 'A0_V', 'A1_V', 'motor_cmd'])
+            self.log_path   = os.path.abspath(fname)
+            self.logging_active = True
+            self.log_btn.config(text="  DỪNG LOG  ", bg='#a31515')
+            self.log_status_label.config(text=f"📄 {os.path.basename(self.log_path)}")
+            self._set_status(f"Bắt đầu ghi log: {os.path.basename(self.log_path)}")
+        else:
+            self.logging_active = False
+            if self.csv_file:
+                self.csv_file.close()
+                self.csv_file   = None
+                self.csv_writer = None
+            self.log_btn.config(text="  GHI LOG  ", bg='#1e6b3c')
+            self.log_status_label.config(text="")
+            self._set_status(f"Đã lưu log: {self.log_path}")
 
     # ----------------------------------------------------------
     #  TIỆN ÍCH
@@ -363,10 +389,9 @@ class DualMonitorApp:
                 self.arduino_ser.close()
             except Exception:
                 pass
-        if self.csv_file:
+        if self.logging_active and self.csv_file:
             self.csv_file.close()
-            if self.log_path:
-                print(f"[LOG] Đã lưu: {self.log_path}")
+            print(f"[LOG] Đã lưu: {self.log_path}")
         plt.close('all')
         self.root.destroy()
 
